@@ -66,6 +66,7 @@ class Circle {
       
       stime = 0;
       streak++;
+      highestStreak = max(highestStreak, streak);
       cscore *= streak;
       score += cscore;
       

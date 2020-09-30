@@ -3,6 +3,11 @@ import java.awt.Robot;
 
 Circle[] circles;
 
+static final String DATA_PATH = "data.json";
+static final String HIGH_SCORE = "high-score";
+static final String HIGH_STREAK = "high-streak";
+static JSONObject data;
+
 final PVector unscaledSize = new PVector(160, 90);
 final float scale = 8;
 
@@ -19,9 +24,11 @@ final float radiusPadding = 1;
 float pointLostPerSecond = 5;
 
 int streak;
+int highestStreak;
 
 float score;
 float roundHighScore;
+float highestScore;
 
 boolean shake = true;
 
@@ -30,6 +37,18 @@ boolean robot = false;
 
 void settings() {
   size(int(unscaledSize.x * scale), int(unscaledSize.y * scale));
+  
+  if (new File(dataPath(DATA_PATH)).exists()) {
+    data = loadJSONObject(dataPath(DATA_PATH));
+    
+    highestScore = data.getFloat(HIGH_SCORE);
+    highestStreak = data.getInt(HIGH_STREAK);
+  }
+  else {
+    data = new JSONObject();
+    data.setFloat(HIGH_SCORE, 0);
+    data.setInt(HIGH_STREAK, 0);
+  }
 }
 
 void setup() {
@@ -59,6 +78,7 @@ void draw() {
     c.drawScore();
   
   roundHighScore = max(score, roundHighScore);
+  highestScore = max(highestScore, roundHighScore);
   score -= pointLostPerSecond / frameRate;
   pointLostPerSecond += (1 / frameRate);
   pointLostPerSecond = min(pointLostPerSecond, 1000);
@@ -67,9 +87,9 @@ void draw() {
   fill(#696969);
   textSize(32);
   textAlign(LEFT, TOP);
-  text("Score: " + int(score) + " | Round Highest: " + int(roundHighScore), 15, 15);
+  text("Score: " + int(score) + " | Round Highest: " + int(roundHighScore) + " | Highest: " + int(highestScore), 15, 15);
   textAlign(RIGHT, TOP);
-  text("Streak: x" + int(streak), width - 15, 15);
+  text("Streak: x" + int(streak) + " | Highest: x" + int(highestStreak), width - 15, 15);
   
   ppRun();
   
@@ -97,4 +117,12 @@ void keyReleased() {
       roundHighScore = 0;
       break;
   }
+}
+void exit() {
+  data.setFloat(HIGH_SCORE, highestScore);
+  data.setFloat(HIGH_STREAK, highestStreak);
+  
+  saveJSONObject(data, dataPath(DATA_PATH));
+  
+  super.exit();
 }
