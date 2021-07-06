@@ -5,8 +5,6 @@ class Circle {
   color col;
   
   float stime;
-  
-  float time;
   float cscore;
   float scoreTime;
   String nscore;
@@ -37,8 +35,6 @@ class Circle {
     
     fill(col);
     circle(position.x, position.y, radius * 2);
-    
-    time++;
   }
   
   void drawScore() {
@@ -48,37 +44,44 @@ class Circle {
       textAlign(CENTER, CENTER);
       text(nscore, pmouse.x, pmouse.y);
       
-      scoreTime += 1 / frameRate;
+      scoreTime += deltaTime;
     }
     
-    if (stime <= globalStreakTime) {
-      stime += 1 / frameRate;
-    } else
+    if (stime <= streakTime)
+      stime += deltaTime;
+    else {
+      streakTime = globalStreakTime;
       streak = 0;
+    }
   }
   
-  void mousePressed() {
-    cscore = max(radius / scale - max(time / frameRate, circleRadiusRange.x), minScore);
-    pmouse = new PVector(mouseX, mouseY);
-    
-    if ((shouldReset = dist(mouseX, mouseY, position.x, position.y) <= radius + radiusPadding * scale) == true) {
-      time = 0;
-      
+  void hit() {
       stime = 0;
       streak++;
+      streakTime *= streakTimeMul;
       highestStreak = max(highestStreak, streak);
+      time += cscore * scoreTimeMult;
       cscore *= streak;
       score += cscore;
       
       scoreTime = 0;
       nscore = "+" + cscore;
-    } else {
+  }
+  
+  void mousePressed() {
+    cscore = max(radius / scale - max(time, circleRadiusRange.x), minScore);
+    pmouse = new PVector(mouseX, mouseY);
+    
+    if ((shouldReset = dist(mouseX, mouseY, position.x, position.y) <= radius + radiusPadding * scale) == true)
+      hit();
+    else {
       score -= cscore;
       
       stime = 0;
       scoreTime = 0;
       streak = 0;
       nscore = "-" + cscore;
+      time -= cscore;
     }
   }
 }

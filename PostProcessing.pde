@@ -60,9 +60,16 @@ color ppLerpColor(color col1, color col2, color lerp) {
 }
 
 int ppGetPixelIndex(int x, int y) {
-  x = constrain(x, 0, pixelWidth - 1);
-  y = constrain(y, 0, pixelHeight - 1);
-  
+  if (x < 0)
+    x = 0;
+  if (x >= width)
+    x = width - 1;
+    
+  if (y < 0)
+    y = 0;
+  if (y >= height)
+    y = height - 1;
+    
   return x + y * pixelWidth;
 }
 
@@ -71,19 +78,22 @@ void ppRun() {
   
   ppPixels = pixels.clone();
   
-  for (Circle c : circles)
-    if (shake && c.scoreTime <= globalShakeTime) {
-      PVector shakeDir = PVector.fromAngle(radians(random(360))).mult(shakeEffect);
-  
-      for (int x = 0; x < pixelWidth; x++)
-        for (int y = 0; y < pixelHeight; y++) {
-          ppScreenShake(x, y, shakeDir);
-          //ppBlur(x, y, new PVector(1, 1));
-          //ppBloom(x, y, color(200));
-          //ppExposure(x, y, 1.5, 1);
-          //ppVignette(x, y, 15, 0.25);
-        }
-    }
+  if (shake && circle.scoreTime <= globalShakeTime) {
+    final float maxShake = 1;
+    float shake = streak * 0.1;
+    if (shake > maxShake)
+      shake = maxShake;
+    PVector shakeDir = PVector.fromAngle(radians(random(360))).mult(shakeEffect * shake);
+
+    for (int x = 0; x < pixelWidth; x++)
+      for (int y = 0; y < pixelHeight; y++) {
+        ppScreenShake(x, y, shakeDir);
+        //ppBlur(x, y, new PVector(1, 1));
+        //ppBloom(x, y, color(200));
+        //ppExposure(x, y, 1.5, 1);
+        //ppVignette(x, y, 15, 0.25);
+      }
+  }
   
   updatePixels();
 }

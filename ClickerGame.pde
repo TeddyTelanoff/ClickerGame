@@ -1,7 +1,6 @@
 import static java.awt.event.KeyEvent.*;
-import java.awt.Robot;
 
-Circle[] circles;
+Circle circle;
 
 static final String DATA_PATH = "data.json";
 static final String HIGH_SCORE = "high-score";
@@ -9,37 +8,46 @@ static final String HIGH_STREAK = "high-streak";
 static JSONObject data;
 
 final PVector unscaledSize = new PVector(160, 90);
-final float scale = 8;
+final float scale = 10;
 
 final PVector circleRadiusRange = new PVector(10, 25);
 
 final float minScore = 0.5;
 final float globalScoreTime = 1.5;
 final float globalStreakTime = 0.75;
+final float streakTimeMul = 0.98;
 final float globalShakeTime = 0.25;
 final float shakeEffect = 7.5;
 
 final float radiusPadding = 1;
 
-float pointLostPerSecond = 5;
+final float initialPointLostPerSecond = 5;
+final float initialTime = 25;
+
+final float scoreTimeMult = 1;
+
+float pointLostPerSecond = initialPointLostPerSecond;
 
 int streak;
 int highestStreak;
 
+float pframe, now, deltaTime;
+float time = initialTime;
+float streakTime = globalStreakTime;
+
 float score;
-float roundHighScore;
 float highestScore;
 
-boolean shake = true;
+boolean shake = true, godMode, didGodMode;
 
-Robot r;
-boolean robot = false;
+boolean lossed, pp = true;
 
 void settings() {
-  size(int(unscaledSize.x * scale), int(unscaledSize.y * scale));
+  //size(int(unscaledSize.x * scale), int(unscaledSize.y * scale));
+  fullScreen();
   
-  if (new File(dataPath(DATA_PATH)).exists()) {
-    data = loadJSONObject(dataPath(DATA_PATH));
+  if (new File(sketchPath(DATA_PATH)).exists()) {
+    data = loadJSONObject(sketchPath(DATA_PATH));
     
     highestScore = data.getFloat(HIGH_SCORE);
     highestStreak = data.getInt(HIGH_STREAK);
@@ -55,74 +63,102 @@ void setup() {
   frameRate(Float.MAX_VALUE);
   noStroke();
   
-  circles = new Circle[] { new Circle() };
-  
-  try {
-    r = new Robot();
-  } catch (Exception e) {
-    e.printStackTrace();
-  }
+  circle = new Circle();
+  pframe = millis();
 }
 
 void draw() {
-  surface.setTitle("Clicker Game | FPS: " + frameRate);
-  background(57);
+  //surface.setTitle("Clicker Game | FPS: " + frameRate);
+  background(64);
   
-  for (Circle c : circles)
-    if (c == null)
-      c = new Circle();
+  now = millis();
+  deltaTime = (now - pframe) / 1000;
+  pframe = now;
   
-  for (Circle c : circles)
-    c.draw();
-  for (Circle c : circles)
-    c.drawScore();
+  if (time <= 0) {
+    background(0);
+    return;
+  } else
+    time -= deltaTime * initialPointLostPerSecond;
   
-  roundHighScore = max(score, roundHighScore);
-  highestScore = max(highestScore, roundHighScore);
-  score -= pointLostPerSecond / frameRate;
-  pointLostPerSecond += (1 / frameRate);
-  pointLostPerSecond = min(pointLostPerSecond, 1000);
-  score = max(score, 0);
+  if (circle == null)
+     circle = new Circle();
+  
+  circle.draw();
+  circle.drawScore();
+  
+  highestScore = max(highestScore, score);
+  //score -= pointLostPerSecond / frameRate;
+  //pointLostPerSecond += (1 / frameRate);
+  //pointLostPerSecond = min(pointLostPerSecond, 1000);
+  //score = max(score, 0);
+  
+  if (godMode)
+    circle.hit();
   
   fill(#696969);
-  textSize(32);
+  textSize(36);
   textAlign(LEFT, TOP);
-  text("Score: " + int(score) + " | Round Highest: " + int(roundHighScore) + " | Highest: " + int(highestScore), 15, 15);
+  text("Score: " + int(score) + " | Highest: " + int(highestScore), 15, 15);
   textAlign(RIGHT, TOP);
   text("Streak: x" + int(streak) + " | Highest: x" + int(highestStreak), width - 15, 15);
+  textAlign(LEFT, BOTTOM);
+  text("Time: " + int(time), 15, height - 15);
   
-  ppRun();
+  if (pp)
+    ppRun();
   
-  if (robot)
-    r.mouseMove(round(circles[0].position.x), round(circles[0].position.y));
+  if (godMode) {
+    fill(0, 255, 0);
+    square(0, 0, 5);
+  }
 }
 
 void mousePressed() {
-  for (Circle c : circles)
-    c.mousePressed();
+  if (time <= 0) {
+    reset();
+    return;
+  }
+  
+  circle.mousePressed();
+}
+
+void reset() {
+  didGodMode = godMode;
+  pframe = millis();
+  time = initialTime;
+  score = 0;
+  pointLostPerSecond = initialPointLostPerSecond;
+  streak = 0;
 }
 
 void keyReleased() {
   switch(keyCode) {
-    case VK_F:
-      //robot = !robot;
+    case VK_P:
+      pp = !pp;
+      break;
+    case VK_G:
+      didGodMode = true;
+      godMode = !godMode;
       break;
     case VK_S:
       shake = !shake;
       break;
     case VK_R:
-      score = 0;
-      pointLostPerSecond = 5;
-      streak = 0;
-      roundHighScore = 0;
+      reset();
       break;
   }
 }
 void exit() {
+  if (didGodMode) {
+    super.exit();
+    return;
+  }
+  
   data.setFloat(HIGH_SCORE, highestScore);
   data.setFloat(HIGH_STREAK, highestStreak);
   
-  saveJSONObject(data, dataPath(DATA_PATH));
+  saveJSONObject(data, sketchPath(DATA_PATH));
   
   super.exit();
 }
